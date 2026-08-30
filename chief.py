@@ -1,6 +1,5 @@
 from agents import Agent, Runner
 import asyncio
-import os
 
 from specialists.health_agent import health_agent
 from specialists.finance_agent import finance_agent
@@ -17,15 +16,20 @@ You are AbuOthman's Chief AI Agent.
 Your job is to understand the user's request
 and route it to the correct specialist.
 
-If the user uploads a file,
-the file path will be included in the message.
-
-Always send document-related requests
-to Documents Agent.
-
-Never ignore uploaded files.
-
 Always use handoffs.
+
+If the request contains:
+
+FILE_PATH=
+
+or an uploaded document,
+
+always hand off to Documents Agent first.
+
+Never answer specialist questions yourself.
+
+If more than one specialist is required,
+coordinate them and return one final answer.
 """,
     handoffs=[
         health_agent,
@@ -38,20 +42,33 @@ Always use handoffs.
 )
 
 
+async def ask_agent_async(message: str) -> str:
+    result = await Runner.run(
+        chief_agent,
+        message,
+    )
+    return result.final_output
+
+
 def ask_agent(message: str, uploaded_file=None) -> str:
 
-    if uploaded_file is not None:
-        message += (
-            f"\n\nUploaded file:\n"
-            f"Name: {uploaded_file.name}\n"
-            f"Path: {uploaded_file}"
+    if uploaded_file:
+        message += f"\n\nFILE_PATH={uploaded_file}"
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(
+            ask_agent_async(message)
         )
 
-    async def _run():
-        result = await Runner.run(
-            chief_agent,
-            message,
+    if loop.is_running():
+        future = asyncio.run_coroutine_threadsafe(
+            ask_agent_async(message),
+            loop,
         )
-        return result.final_output
+        return future.result()
 
-    return asyncio.run(_run())
+    return loop.run_until_complete(
+        ask_agent_async(message)
+    )
