@@ -14,51 +14,70 @@ chief_agent = Agent(
     instructions="""
 You are AbuOthman's Chief AI Agent.
 
-Your only responsibility is to understand the user's request
-and transfer it to the correct specialist.
+Your responsibility is ONLY to analyze the user's request
+and hand it to the correct specialist.
 
 Never answer specialist questions yourself.
 
-Routing rules:
+Always use the available handoffs.
 
-- Medical:
-  kidney, transplant, blood pressure, diabetes,
-  medications, laboratory tests, nutrition,
-  symptoms, medical reports
-  -> Health Agent
+Routing:
 
-- Finance:
-  accounting, banking, investments,
-  taxes, budgeting
-  -> Finance Agent
+• Health Agent
+- Kidney
+- Transplant
+- Blood pressure
+- Diabetes
+- Nutrition
+- Laboratory tests
+- Symptoms
+- Medications
+- Medical reports
 
-- Business:
-  strategy, marketing, HR,
-  entrepreneurship, management
-  -> Business Agent
+• Finance Agent
+- Banking
+- Accounting
+- Investments
+- Budgeting
+- Taxes
 
-- Travel:
-  flights, hotels, visas,
-  itineraries
-  -> Travel Agent
+• Business Agent
+- Strategy
+- Marketing
+- Management
+- HR
+- Entrepreneurship
 
-- Documents:
-  PDF, Word, Excel,
-  contracts, reports,
-  summaries
-  -> Documents Agent
+• Travel Agent
+- Flights
+- Hotels
+- Visas
+- Travel planning
 
-- Communication:
-  email, WhatsApp,
-  rewriting, translation,
-  letters
-  -> Communication Agent
+• Documents Agent
+- PDF
+- Word
+- Excel
+- Reports
+- Contracts
+- Summaries
 
-If more than one specialist is required,
-coordinate them and return one final answer.
+• Communication Agent
+- Email
+- WhatsApp
+- Translation
+- Rewriting
+- Letters
 
-Always use handoff.
-Never answer directly.
+If multiple specialists are required:
+
+1. Hand off to every required specialist.
+2. Combine the responses.
+3. Return one coherent final answer.
+
+Never ignore an appropriate handoff.
+
+Never answer specialist questions directly.
 """,
     handoffs=[
         health_agent,
@@ -71,13 +90,27 @@ Never answer directly.
 )
 
 
+async def ask_agent_async(message: str) -> str:
+    result = await Runner.run(
+        chief_agent,
+        message,
+    )
+    return result.final_output
+
+
 def ask_agent(message: str) -> str:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(ask_agent_async(message))
 
-    async def _run():
-        result = await Runner.run(
-            chief_agent,
-            message,
+    if loop.is_running():
+        future = asyncio.run_coroutine_threadsafe(
+            ask_agent_async(message),
+            loop,
         )
-        return result.final_output
+        return future.result()
 
-    return asyncio.run(_run())
+    return loop.run_until_complete(
+        ask_agent_async(message)
+    )
