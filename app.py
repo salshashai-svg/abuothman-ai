@@ -14,6 +14,11 @@ if "messages" not in st.session_state:
 with st.sidebar:
     st.title("🤖 AbuOthman AI")
 
+    uploaded_file = st.file_uploader(
+        "📎 رفع ملف",
+        type=["pdf", "docx", "txt", "xlsx", "csv", "png", "jpg", "jpeg"],
+    )
+
     if st.button("🗑️ محادثة جديدة", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
@@ -31,7 +36,13 @@ for msg in st.session_state.messages:
 
 prompt = st.chat_input("اكتب رسالتك...")
 
+if uploaded_file:
+    st.success(f"تم رفع الملف: {uploaded_file.name}")
+
 if prompt:
+
+    if uploaded_file:
+        prompt += f"\n\nالمستخدم أرفق ملفًا اسمه: {uploaded_file.name}"
 
     st.session_state.messages.append(
         {"role": "user", "content": prompt}
@@ -45,18 +56,20 @@ if prompt:
         placeholder = st.empty()
 
         with st.spinner("🧠 يفكر..."):
-
             answer = ask_agent(prompt)
 
-        output = ""
+        text = ""
 
         for word in answer.split():
-            output += word + " "
-            placeholder.markdown(output + "▌")
-            time.sleep(0.015)
+            text += word + " "
+            placeholder.markdown(text + "▌")
+            time.sleep(0.01)
 
-        placeholder.markdown(output)
+        placeholder.markdown(answer)
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": answer}
+        {
+            "role": "assistant",
+            "content": answer,
+        }
     )
