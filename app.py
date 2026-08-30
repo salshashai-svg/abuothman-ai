@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 from chief import ask_agent
 
@@ -7,13 +8,11 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("🤖 AbuOthman AI")
-st.caption("مساعدك الذكي متعدد الوكلاء")
-
-# ---------- Sidebar ----------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 with st.sidebar:
-    st.header("AbuOthman AI")
+    st.title("🤖 AbuOthman AI")
 
     if st.button("🗑️ محادثة جديدة", use_container_width=True):
         st.session_state.messages = []
@@ -21,31 +20,21 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### عدد الرسائل")
-    st.info(len(st.session_state.get("messages", [])))
+    st.metric("عدد الرسائل", len(st.session_state.messages))
 
-# ---------- Chat Memory ----------
+st.title("🤖 AbuOthman AI")
+st.caption("وكيل ذكي متعدد التخصصات")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# ---------- Show History ----------
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# ---------- Chat Input ----------
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
 prompt = st.chat_input("اكتب رسالتك...")
 
 if prompt:
 
     st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": prompt,
-        }
+        {"role": "user", "content": prompt}
     )
 
     with st.chat_message("user"):
@@ -55,21 +44,19 @@ if prompt:
 
         placeholder = st.empty()
 
-        with st.spinner("🧠 الوكيل يفكر..."):
+        with st.spinner("🧠 يفكر..."):
 
             answer = ask_agent(prompt)
 
-        text = ""
+        output = ""
 
         for word in answer.split():
-            text += word + " "
-            placeholder.markdown(text + "▌")
+            output += word + " "
+            placeholder.markdown(output + "▌")
+            time.sleep(0.015)
 
-        placeholder.markdown(answer)
+        placeholder.markdown(output)
 
     st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": answer,
-        }
+        {"role": "assistant", "content": answer}
     )
