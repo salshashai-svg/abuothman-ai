@@ -8,17 +8,39 @@ st.set_page_config(
 )
 
 st.title("🤖 AbuOthman AI")
+st.caption("مساعدك الذكي متعدد الوكلاء")
+
+# ---------- Sidebar ----------
+
+with st.sidebar:
+    st.header("AbuOthman AI")
+
+    if st.button("🗑️ محادثة جديدة", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+    st.divider()
+
+    st.markdown("### عدد الرسائل")
+    st.info(len(st.session_state.get("messages", [])))
+
+# ---------- Chat Memory ----------
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# ---------- Show History ----------
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# ---------- Chat Input ----------
+
 prompt = st.chat_input("اكتب رسالتك...")
 
 if prompt:
+
     st.session_state.messages.append(
         {
             "role": "user",
@@ -30,10 +52,20 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("يفكر..."):
+
+        placeholder = st.empty()
+
+        with st.spinner("🧠 الوكيل يفكر..."):
+
             answer = ask_agent(prompt)
 
-        st.markdown(answer)
+        text = ""
+
+        for word in answer.split():
+            text += word + " "
+            placeholder.markdown(text + "▌")
+
+        placeholder.markdown(answer)
 
     st.session_state.messages.append(
         {
