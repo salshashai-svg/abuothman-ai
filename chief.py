@@ -1,5 +1,6 @@
 from agents import Agent, Runner
 import asyncio
+import os
 
 from specialists.health_agent import health_agent
 from specialists.finance_agent import finance_agent
@@ -8,76 +9,23 @@ from specialists.travel_agent import travel_agent
 from specialists.documents_agent import documents_agent
 from specialists.communication_agent import communication_agent
 
-
 chief_agent = Agent(
     name="AbuOthman Chief Agent",
     instructions="""
 You are AbuOthman's Chief AI Agent.
 
-Your responsibility is ONLY to analyze the user's request
-and hand it to the correct specialist.
+Your job is to understand the user's request
+and route it to the correct specialist.
 
-Never answer specialist questions yourself.
+If the user uploads a file,
+the file path will be included in the message.
 
-Always use the available handoffs.
+Always send document-related requests
+to Documents Agent.
 
-Routing:
+Never ignore uploaded files.
 
-• Health Agent
-- Kidney
-- Transplant
-- Blood pressure
-- Diabetes
-- Nutrition
-- Laboratory tests
-- Symptoms
-- Medications
-- Medical reports
-
-• Finance Agent
-- Banking
-- Accounting
-- Investments
-- Budgeting
-- Taxes
-
-• Business Agent
-- Strategy
-- Marketing
-- Management
-- HR
-- Entrepreneurship
-
-• Travel Agent
-- Flights
-- Hotels
-- Visas
-- Travel planning
-
-• Documents Agent
-- PDF
-- Word
-- Excel
-- Reports
-- Contracts
-- Summaries
-
-• Communication Agent
-- Email
-- WhatsApp
-- Translation
-- Rewriting
-- Letters
-
-If multiple specialists are required:
-
-1. Hand off to every required specialist.
-2. Combine the responses.
-3. Return one coherent final answer.
-
-Never ignore an appropriate handoff.
-
-Never answer specialist questions directly.
+Always use handoffs.
 """,
     handoffs=[
         health_agent,
@@ -90,27 +38,20 @@ Never answer specialist questions directly.
 )
 
 
-async def ask_agent_async(message: str) -> str:
-    result = await Runner.run(
-        chief_agent,
-        message,
-    )
-    return result.final_output
+def ask_agent(message: str, uploaded_file=None) -> str:
 
-
-def ask_agent(message: str) -> str:
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(ask_agent_async(message))
-
-    if loop.is_running():
-        future = asyncio.run_coroutine_threadsafe(
-            ask_agent_async(message),
-            loop,
+    if uploaded_file is not None:
+        message += (
+            f"\n\nUploaded file:\n"
+            f"Name: {uploaded_file.name}\n"
+            f"Path: {uploaded_file}"
         )
-        return future.result()
 
-    return loop.run_until_complete(
-        ask_agent_async(message)
-    )
+    async def _run():
+        result = await Runner.run(
+            chief_agent,
+            message,
+        )
+        return result.final_output
+
+    return asyncio.run(_run())

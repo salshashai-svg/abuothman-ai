@@ -1,10 +1,4 @@
-import time
-import streamlit as st
-from chief import ask_agent
-
-st.set_page_config(
-    page_title="AbuOthman AI",
-    page_icon="🤖",
+🤖",
     layout="wide",
 )
 
@@ -72,4 +66,10 @@ if prompt:
             "role": "assistant",
             "content": answer,
         }
-    )
+    )import time
+import streamlit as st
+from chief import ask_agent
+
+st.set_page_config(
+    page_title="AbuOthman AI",
+    page_icon="
